@@ -33,4 +33,4 @@ setInterval(function () {
     //motor.servoWrite(2400)
     //motor.servoWrite(1500);
     console.log(pulseWidth);
-}, 50);
+}, 25);

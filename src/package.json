@@ -5,6 +5,7 @@
   "main": "duck.js",
   "scripts": {
     "start": "node duck.js",
+    "speech": "sudo node speech.js",
     "sudo-start": "sudo node duck.js",
     "build": "tsc --build",
     "clean": "tsc --build --clean",
@@ -13,7 +14,8 @@
   "author": "Thomas Holmes",
   "license": "MIT",
   "dependencies": {
-    "pigpio": "^3.3.1"
+    "pigpio": "^3.3.1",
+    "web-audio-api": "^0.2.2"
   },
   "devDependencies": {
     "@types/node": "^15.0.2",

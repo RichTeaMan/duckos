@@ -42,4 +42,4 @@ setInterval(() => {
   console.log(pulseWidth);
 
   
-}, 50);
+}, 25);
