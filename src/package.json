@@ -4,12 +4,19 @@
   "description": "A rubber ducking device",
   "main": "duck.js",
   "scripts": {
-    "start": "sudo node duck.js",
+    "start": "node duck.js",
+    "sudo-start": "sudo node duck.js",
+    "build": "tsc --build",
+    "clean": "tsc --build --clean",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Thomas Holmes",
   "license": "MIT",
   "dependencies": {
     "pigpio": "^3.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^15.0.2",
+    "typescript": "^4.2.4"
   }
 }

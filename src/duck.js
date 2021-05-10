@@ -1,6 +1,6 @@
-const Gpio = require('pigpio').Gpio;
-
-const motor = new Gpio(17, { mode: Gpio.OUTPUT });
+"use strict";
+var Gpio = require('pigpio').Gpio;
+var motor = new Gpio(17, { mode: Gpio.OUTPUT });
 /*
 let dutyCycle = 0;
 
@@ -13,33 +13,24 @@ setInterval(() => {
   }
 }, 20);
 */
-
-
 console.log("pulsing");
-
-const topPosition = 2500;
-const bottomPosition = 1600;
-const step = 50;
-
-
-let pulseWidth = topPosition;
-let increment = step;
-
-setInterval(() => {
-  
-  pulseWidth += increment;
-  if (pulseWidth >= topPosition) {
-    increment = -step;
-    pulseWidth = topPosition;
-  } else if (pulseWidth <= bottomPosition) {
-    increment = step;
-    pulseWidth = bottomPosition;
-  }
-  motor.servoWrite(pulseWidth);
-  //motor.servoWrite(2400)
-  //motor.servoWrite(1500);
-
-  console.log(pulseWidth);
-
-  
+var topPosition = 2500;
+var bottomPosition = 1600;
+var step = 50;
+var pulseWidth = topPosition;
+var increment = step;
+setInterval(function () {
+    pulseWidth += increment;
+    if (pulseWidth >= topPosition) {
+        increment = -step;
+        pulseWidth = topPosition;
+    }
+    else if (pulseWidth <= bottomPosition) {
+        increment = step;
+        pulseWidth = bottomPosition;
+    }
+    motor.servoWrite(pulseWidth);
+    //motor.servoWrite(2400)
+    //motor.servoWrite(1500);
+    console.log(pulseWidth);
 }, 50);
