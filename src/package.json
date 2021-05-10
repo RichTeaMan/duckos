@@ -1,0 +1,15 @@
+{
+  "name": "duckos",
+  "version": "0.0.1",
+  "description": "A rubber ducking device",
+  "main": "duck.js",
+  "scripts": {
+    "start": "sudo node duck.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Thomas Holmes",
+  "license": "MIT",
+  "dependencies": {
+    "pigpio": "^3.3.1"
+  }
+}
