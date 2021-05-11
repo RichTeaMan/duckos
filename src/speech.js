@@ -7,6 +7,7 @@ var pigpio_1 = require("pigpio");
 var fs_1 = __importDefault(require("fs"));
 // @ts-ignore
 var web_audio_api_1 = require("web-audio-api");
+var speaker_1 = __importDefault(require("speaker"));
 var Speech = /** @class */ (function () {
     /*
     let dutyCycle = 0;
@@ -42,11 +43,25 @@ var Speech = /** @class */ (function () {
         var margin = 10;
         var chunkSize = 50;
         var ac = new web_audio_api_1.AudioContext();
+        //const ac: AudioContext = new wAudioContext();
         var file = fs_1.default.readFileSync(fileName);
         console.log(file);
         var ab = this.toArrayBuffer(file);
         console.log(ab);
+        ac.outStream = new speaker_1.default({
+            channels: ac.format.numberOfChannels,
+            bitDepth: ac.format.bitDepth,
+            sampleRate: ac.sampleRate
+        });
         ac.decodeAudioData(file, function (audioBuffer) {
+            console.log("???");
+            var bufferNode = ac.createBufferSource();
+            bufferNode.connect(ac.destination);
+            bufferNode.buffer = audioBuffer;
+            bufferNode.loop = true;
+            bufferNode.start(0);
+            console.log(">>> ???");
+            var context = ac;
             var float32Array = audioBuffer.getChannelData(0);
             var array = [];
             var i = 0;
@@ -56,12 +71,16 @@ var Speech = /** @class */ (function () {
                     return Math.max(total, Math.abs(value));
                 }));
             }
+            console.log(ac);
+            console.log("sound???");
+            //ac.resume();
+            console.log("sound done");
             for (var index in array) {
-                console.log(array[index]);
+                //console.log(array[index]);
             }
         });
     };
     return Speech;
 }());
 var s = new Speech();
-s.loadSpeech("/home/duckos/duckjs/dont-stop-me-now.mp3");
+s.loadSpeech("/home/duckos/duckos/dont-stop-me-now.mp3");

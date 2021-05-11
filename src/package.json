@@ -15,6 +15,7 @@
   "license": "MIT",
   "dependencies": {
     "pigpio": "^3.3.1",
+    "speaker": "^0.5.3",
     "web-audio-api": "^0.2.2"
   },
   "devDependencies": {

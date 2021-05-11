@@ -1,7 +1,8 @@
 import { Gpio } from 'pigpio';
 import fs from 'fs';
 // @ts-ignore
-import { AudioContext } from 'web-audio-api';
+import { AudioContext as nodeAudioContext } from 'web-audio-api';
+import Speaker from 'speaker';
 
 class Speech {
 
@@ -49,13 +50,32 @@ class Speech {
     const margin = 10;
     const chunkSize = 50;
 
-    const ac: AudioContext = new AudioContext();
+    const ac: AudioContext & { format: any, outStream: any } = new nodeAudioContext();
+    //const ac: AudioContext = new wAudioContext();
     const file = fs.readFileSync(fileName);
     console.log(file);
     const ab = this.toArrayBuffer(file);
     console.log(ab);
+
+    ac.outStream = new Speaker({
+      channels: ac.format.numberOfChannels,
+      bitDepth: ac.format.bitDepth,
+      sampleRate: ac.sampleRate
+    });
+
     ac.decodeAudioData(file, (audioBuffer: AudioBuffer) => {
 
+      console.log("???");
+      var bufferNode = ac.createBufferSource();
+      bufferNode.connect(ac.destination);
+      bufferNode.buffer = audioBuffer;
+      bufferNode.loop = true;
+      bufferNode.start(0);
+      console.log(">>> ???");
+
+      
+
+      const context: AudioContext = ac;
       const float32Array = audioBuffer.getChannelData(0);
 
       const array = [];
@@ -70,8 +90,13 @@ class Speech {
         );
       }
 
+      console.log(ac);
+      console.log("sound???");
+      //ac.resume();
+      console.log("sound done");
+
       for (let index in array) {
-        console.log(array[index]);
+        //console.log(array[index]);
       }
     });
   }
@@ -79,4 +104,4 @@ class Speech {
 }
 
 const s = new Speech();
-s.loadSpeech("/home/duckos/duckjs/dont-stop-me-now.mp3");
+s.loadSpeech("/home/duckos/duckos/dont-stop-me-now.mp3");
