@@ -92,11 +92,13 @@ build {
 
       "mkdir /home/${local.username}/.ssh",
       "mv /tmp/id_ed25519 /home/${local.username}/.ssh/.",
-      "mv /tmp/id_ed25519.pub /home/${local.username}/.ssh/.",
+      "cp /tmp/id_ed25519.pub /home/${local.username}/.ssh/.",
+      "mv /tmp/id_ed25519.pub /home/${local.username}/.ssh/authorized_keys",
 
       "chmod 700 /home/${local.username}/.ssh",
       "chmod 600 /home/${local.username}/.ssh/id_ed25519",
       "chmod 644 /home/${local.username}/.ssh/id_ed25519.pub",
+      "chmod 600 /home/${local.username}/.ssh/authorized_keys",
 
       "chown ${local.username}:${local.username} /home/${local.username}/ -R",
 
