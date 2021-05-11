@@ -2,6 +2,7 @@ locals {
   username  = "duckos"
   password  = "duckos"
   full_name = "duckos"
+  hostname  = "duckos"
 
   ssid            = vault("/secret/data/access", "ssid")
   wifi_passphrase = vault("/secret/data/access", "wifi_passphrase")
@@ -69,18 +70,6 @@ build {
     ]
   }
   provisioner "file" {
-    source      = "src/"
-    destination = "/tmp/src/"
-  }
-  provisioner "shell" {
-    inline = [
-      "mv /tmp/src/ /home/${local.username}/duckjs",
-      "cd /home/${local.username}/duckjs",
-      "npm install",
-      "chown ${local.username}:${local.username} /home/${local.username} -R"
-    ]
-  }
-  provisioner "file" {
     source      = "duckos-image-resources/"
     destination = "/tmp/"
   }
@@ -89,8 +78,8 @@ build {
       "sed -i 's/SSID/${local.ssid}/g' /tmp/wpa_supplicant.conf",
       "sed -i 's/WIFI_PASSPHRASE/${local.wifi_passphrase}/g' /tmp/wpa_supplicant.conf",
       "mv /tmp/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf",
-      "echo duckjs > /etc/hostname",
-      "echo \"127.0.0.1   duckjs\" >> /etc/hosts",
+      "echo ${local.hostname} > /etc/hostname",
+      "echo \"127.0.0.1   ${local.hostname}\" >> /etc/hosts",
 
       "cp /tmp/rc.local /etc/rc.local",
       "systemctl enable ssh"
@@ -112,13 +101,37 @@ build {
       "chown ${local.username}:${local.username} /home/${local.username}/ -R",
 
       "echo \"${local.gpg}\" | base64 -d > /tmp/github-gpg.key",
-      "gpg2 --import --batch /tmp/github-gpg.key",
 
-      "git config --global user.name \"${local.git_name}\"",
-      "git config --global user.email \"${local.git_email}\"",
-      "git config --global gpg.program gpg2",
-      "git config --global user.signingkey ${local.git_signingkey}",
-      "git config --global commit.gpgsign true"
+      <<EOF
+      su -l ${local.username} -c '
+      gpg2 --import --batch /tmp/github-gpg.key &&
+      git config --global user.name \"${local.git_name}\" &&
+      git config --global user.email \"${local.git_email}\" &&
+      git config --global gpg.program gpg2 &&
+      git config --global user.signingkey ${local.git_signingkey} &&
+      git config --global commit.gpgsign true'
+      EOF
+    ]
+  }
+  provisioner "file" {
+    source      = "src/"
+    destination = "/tmp/src/"
+  }
+  provisioner "shell" {
+    inline = [
+
+      "cd /home/${local.username}",
+      <<EOF
+      su -l ${local.username} -c '
+      ssh-keyscan -t rsa github.com >> /home/${local.username}/.ssh/known_hosts &&
+      git clone git@github.com:RichTeaMan/duckos.git'
+      EOF
+      ,
+      "rm /home/${local.username}/duckos/src -rf",
+      "mv /tmp/src/ /home/${local.username}/duckos/src",
+      "chown ${local.username}:${local.username} /home/${local.username}/ -R",
+      "cd /home/${local.username}/duckos/src",
+      "su -l ${local.username} -c 'npm install'"
     ]
   }
 }
