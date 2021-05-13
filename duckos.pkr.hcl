@@ -57,9 +57,11 @@ build {
 
       "apt-get update",
       "apt-get upgrade -y",
-      "apt-get install -y pigpio python-pigpio python3-pigpio nodejs make gcc g++ vim gnupg2 git",
-
+      "apt-get install -y pigpio python-pigpio python3-pigpio nodejs make gcc g++ vim gnupg2 git libasound2-dev sudo apt-get install mpg321 sudo apt-get install raspberrypi-kernel-headers sudo apt-get install libopenal-dev sudo apt-get install freeglut3 freeglut3-dev libalut0 libalut-dev libsdl1.2-dev libsdl1.2debian",
+sudo apt-get install -y libalut-dev libalut0
       "pigpiod -v"
+
+      sudo  chmod o+rw /dev/snd/*
     ]
   }
   provisioner "shell" {

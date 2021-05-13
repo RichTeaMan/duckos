@@ -23,12 +23,11 @@ var Speech = /** @class */ (function () {
     */
     function Speech() {
         this.motor = new pigpio_1.Gpio(17, { mode: pigpio_1.Gpio.OUTPUT });
-        console.log("pulsing");
-        var topPosition = 2500;
-        var bottomPosition = 1600;
-        var step = 50;
-        var pulseWidth = topPosition;
-        var increment = step;
+        this.closedPosition = 2500;
+        this.openPosition = 1600;
+        console.log("speech");
+        console.log("open");
+        this.motor.servoWrite(this.openPosition);
     }
     Speech.prototype.toArrayBuffer = function (buf) {
         var ab = new ArrayBuffer(buf.length);
@@ -39,9 +38,10 @@ var Speech = /** @class */ (function () {
         return ab;
     };
     Speech.prototype.loadSpeech = function (fileName) {
+        var _this = this;
         console.log(fileName);
         var margin = 10;
-        var chunkSize = 50;
+        var mouthSampleLength = 0.0625; // 16 times a second
         var ac = new web_audio_api_1.AudioContext();
         //const ac: AudioContext = new wAudioContext();
         var file = fs_1.default.readFileSync(fileName);
@@ -53,34 +53,56 @@ var Speech = /** @class */ (function () {
             bitDepth: ac.format.bitDepth,
             sampleRate: ac.sampleRate
         });
+        console.log("closed");
+        this.motor.servoWrite(this.closedPosition);
         ac.decodeAudioData(file, function (audioBuffer) {
-            console.log("???");
-            var bufferNode = ac.createBufferSource();
-            bufferNode.connect(ac.destination);
-            bufferNode.buffer = audioBuffer;
-            bufferNode.loop = true;
-            bufferNode.start(0);
-            console.log(">>> ???");
-            var context = ac;
-            var float32Array = audioBuffer.getChannelData(0);
+            var channelArray = audioBuffer.getChannelData(0);
+            console.log("sample rate: " + audioBuffer.sampleRate);
+            console.log("length: " + audioBuffer.length);
+            console.log("channels: " + audioBuffer.numberOfChannels);
+            console.log("duration: " + audioBuffer.duration);
+            console.log("channel data length: " + channelArray.length);
             var array = [];
+            var chunkSize = audioBuffer.sampleRate * mouthSampleLength;
             var i = 0;
-            var length = float32Array.length;
+            var length = channelArray.length;
             while (i < length) {
-                array.push(float32Array.slice(i, i += chunkSize).reduce(function (total, value) {
+                array.push(channelArray.slice(i, i += chunkSize).reduce(function (total, value) {
                     return Math.max(total, Math.abs(value));
                 }));
             }
-            console.log(ac);
-            console.log("sound???");
-            //ac.resume();
-            console.log("sound done");
-            for (var index in array) {
-                //console.log(array[index]);
-            }
+            var min = Math.min.apply(Math, array);
+            var max = Math.max.apply(Math, array);
+            console.log("Samples: " + array.length + " Min: " + min + " Max: " + max);
+            var chunkCount = 0;
+            console.log("Starting sound...");
+            var bufferNode = ac.createBufferSource();
+            bufferNode.connect(ac.destination);
+            bufferNode.buffer = audioBuffer;
+            bufferNode.loop = false;
+            var millis = Date.now();
+            bufferNode.start(0);
+            console.log("Sound started");
+            var mouthInterval = setInterval(function () {
+                if (chunkCount > array.length) {
+                    console.log('Sample complete.');
+                    _this.motor.servoWrite(_this.openPosition);
+                    clearInterval(mouthInterval);
+                }
+                var sample = array[chunkCount];
+                chunkCount++;
+                if (isNaN(sample)) {
+                    console.log(chunkCount + "/" + array.length + " is NAN");
+                    return;
+                }
+                var normalisedSample = (sample - min) / (max - min);
+                var pulse = Math.round(((1.0 - normalisedSample) * (_this.closedPosition - _this.openPosition)) + _this.openPosition);
+                console.log("Chunk: " + chunkCount + "/" + array.length + " Sample: " + sample + " NormalisedSample: " + normalisedSample + " Pulse: " + pulse);
+                _this.motor.servoWrite(pulse);
+            }, 1000 * mouthSampleLength);
         });
     };
     return Speech;
 }());
 var s = new Speech();
-s.loadSpeech("/home/duckos/duckos/dont-stop-me-now.mp3");
+s.loadSpeech("/home/duckos/duckos/bohemian-rhapsody-intro.mp3");
