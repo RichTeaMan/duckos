@@ -13,6 +13,8 @@ locals {
   git_email      = vault("/secret/data/access", "git_email")
   git_name       = vault("/secret/data/access", "git_name")
   git_signingkey = vault("/secret/data/access", "git_signingkey")
+
+  git_branch = "master"
 }
 
 source "arm" "duckos" {
@@ -57,11 +59,8 @@ build {
 
       "apt-get update",
       "apt-get upgrade -y",
-      "apt-get install -y pigpio python-pigpio python3-pigpio nodejs make gcc g++ vim gnupg2 git libasound2-dev sudo apt-get install mpg321 sudo apt-get install raspberrypi-kernel-headers sudo apt-get install libopenal-dev sudo apt-get install freeglut3 freeglut3-dev libalut0 libalut-dev libsdl1.2-dev libsdl1.2debian",
-sudo apt-get install -y libalut-dev libalut0
+      "apt-get install -y pigpio python-pigpio python3-pigpio nodejs make gcc g++ vim gnupg2 git libasound2-dev mpg321",
       "pigpiod -v"
-
-      sudo  chmod o+rw /dev/snd/*
     ]
   }
   provisioner "shell" {
@@ -109,12 +108,16 @@ sudo apt-get install -y libalut-dev libalut0
       <<EOF
       su -l ${local.username} -c '
       gpg2 --import --batch /tmp/github-gpg.key &&
-      git config --global user.name \"${local.git_name}\" &&
-      git config --global user.email \"${local.git_email}\" &&
+      git config --global user.name "${local.git_name}" &&
+      git config --global user.email "${local.git_email}" &&
       git config --global gpg.program gpg2 &&
       git config --global user.signingkey ${local.git_signingkey} &&
-      git config --global commit.gpgsign true'
+      git config --global commit.gpgsign true &&
+      git config --global core.editor vim &&
+      echo "export GPG_TTY=\"\$(tty)\"" > ~/.bashrc'
       EOF
+      ,
+      "cat /home/${local.username}/.bashrc"
     ]
   }
   provisioner "file" {
@@ -128,14 +131,11 @@ sudo apt-get install -y libalut-dev libalut0
       <<EOF
       su -l ${local.username} -c '
       ssh-keyscan -t rsa github.com >> /home/${local.username}/.ssh/known_hosts &&
-      git clone git@github.com:RichTeaMan/duckos.git'
+      git clone --branch ${local.git_branch} git@github.com:RichTeaMan/duckos.git'
       EOF
       ,
-      "rm /home/${local.username}/duckos/src -rf",
-      "mv /tmp/src/ /home/${local.username}/duckos/src",
       "chown ${local.username}:${local.username} /home/${local.username}/ -R",
-      "cd /home/${local.username}/duckos/src",
-      "su -l ${local.username} -c 'npm install'"
+      "su -l ${local.username} -c 'cd /home/${local.username}/duckos/src && npm install'"
     ]
   }
 }

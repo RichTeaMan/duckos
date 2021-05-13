@@ -19,4 +19,7 @@ fi
 
 sudo rfkill unblock all
 
+# enable permission for sound drivers
+sudo chmod o+rw /dev/snd/*
+
 exit 0
