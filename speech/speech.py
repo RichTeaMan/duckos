@@ -2,26 +2,37 @@ import queue
 import sys
 import threading
 
+import requests
 import sounddevice as sd
 import soundfile as sf
 import numpy as np
-
-
-def int_or_str(text):
-    """Helper function for argument parsing."""
-    try:
-        return int(text)
-    except ValueError:
-        return text
 
 filename = 'bohemian-rhapsody-intro.wav'
 blocksize = 2048
 buffersize = 20
 
 q = queue.Queue(maxsize=buffersize)
-event = threading.Event()
+
+last_volume = -1
+
+class ServerThread(object):
+    """ Server thread class
+    Thread to periodically send servo movements.
+    """
+
+    def __init__(self):
+        thread = threading.Thread(target=self.run, args=())
+        thread.daemon = True                            # Daemonize thread
+        thread.start()                                  # Start the execution
+
+    def run(self):
+        global last_volume
+        while True:
+            #print(f'Requesting {last_volume}')
+            requests.get(f'http://192.168.1.35:5000/servo/17/{last_volume}')
 
 def callback(outdata, frames, time, status):
+    global last_volume
     assert frames == blocksize
     if status.output_underflow:
         print('Output underflow: increase blocksize?', file=sys.stderr)
@@ -40,21 +51,37 @@ def callback(outdata, frames, time, status):
         outdata[:] = data
 
     volume_norm = np.linalg.norm(outdata)*10
-    print ("|" * int(volume_norm))
+    # 20 is loud???
+    normed = -1
+    if int(volume_norm) > 0:
+        normed = (20 / int(volume_norm)) - 1
+        if normed > 1:
+            normed = 1
+        if normed < -1:
+            normed = -1
+    last_volume = normed
+    print ("|" * int(volume_norm) + f" {last_volume}")
 
-with sf.SoundFile(filename) as f:
-    for _ in range(buffersize):
-        data = f.read(blocksize)
-        if not len(data):
-            break
-        q.put_nowait(data)  # Pre-fill queue
-    stream = sd.OutputStream(
-        samplerate=f.samplerate, blocksize=blocksize,
-        channels=f.channels,
-        callback=callback, finished_callback=event.set)
-    with stream:
-        timeout = blocksize * buffersize / f.samplerate
-        while len(data):
+def main():
+    event = threading.Event()
+
+    with sf.SoundFile(filename) as f:
+        for _ in range(buffersize):
             data = f.read(blocksize)
-            q.put(data, timeout=timeout)
-        event.wait()  # Wait until playback is finished
+            if not len(data):
+                break
+            q.put_nowait(data)  # Pre-fill queue
+        stream = sd.OutputStream(
+            samplerate=f.samplerate, blocksize=blocksize,
+            channels=f.channels,
+            callback=callback, finished_callback=event.set)
+        with stream:
+            timeout = blocksize * buffersize / f.samplerate
+            while len(data):
+                data = f.read(blocksize)
+                q.put(data, timeout=timeout)
+            event.wait()  # Wait until playback is finished
+
+if __name__ == '__main__':
+    serverThread = ServerThread()
+    main()

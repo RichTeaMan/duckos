@@ -14,10 +14,10 @@ RUN apt-get update && \
 WORKDIR /app
 
 RUN python -m pip install --upgrade pip
-RUN pip3 install sounddevice soundfile numpy
-
-COPY . .
+RUN pip3 install sounddevice soundfile numpy requests
 
 RUN curl tomdesktop.internal/bohemian-rhapsody-intro.wav -o bohemian-rhapsody-intro.wav
+
+COPY . .
 
 ENTRYPOINT python3 speech.py
